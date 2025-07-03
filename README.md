@@ -1,85 +1,101 @@
-
 # Gaze Tracking for ADHD Diagnosis
+
+---
 
 ## Overview
 
-This is a web application designed to give hints about ADHD markers. The app focuses on tracking the gaze while the participant is confronted with distractions, and is designed for the use with healthcare professionals.
+This application is designed to provide insights into potential ADHD markers by tracking a participant's gaze while they are presented with distractions. It's built to be used by **healthcare professionals** as an aid in the diagnostic process.
 
 ## Features
 
-- **Gaze Tracking**: Users can schedule appointments with healthcare professionals, including doctors, nutritionists, and fitness trainers. The platform provides an easy-to-use interface for selecting available time slots and booking appointments.
+* Iris-center calibration and a fixed 60-second tracking session.
+* Real-time gaze tracking of the left iris using MediaPipe Face Mesh.
+* Live feedback showing the current iris x-position versus the calibrated center.
+* Drift detection beyond ±15 px tolerance around the calibrated center.
+* Automatic logging of each drift event’s direction (“Attention_towards_Left” or “Attention_towards_Right”) and duration.
+* Distraction integration with looping piano background music and a “fly” surprise sound effect triggered on drift (0.5 % chance per frame).
+* Post-session drift analysis: a detailed textual log plus a bar-chart visualization of all recorded drift events.
+
+---
 
 ## Target Market
 
-This app is designed for health care providers to assist in the diagnosis of ADHD.
+This application is specifically developed for **healthcare providers** to assist them in the diagnosis of ADHD.
+
+---
 
 ## Tech Stack
 
-This project leverages a powerful combination of React and Node.js, along with a suite of dependencies designed to enhance functionality, security, and user experience. This ensures that the app is not only scalable and efficient but also secure and easy to use for all users.
+The gaze tracking functionality, which is a core component, is implemented in Python and leverages the following key dependencies:
 
-### Frontend
+### Python Dependencies
 
-- **React**: Enables a dynamic and responsive experience with its component-based architecture.
-- **TypeScript**: Adds static types to JavaScript, improving developer productivity and code quality.
-- **Vite**: Provides a fast development environment with next-generation frontend tooling.
-- **Tailwind CSS**: Utility-first CSS framework configured with custom screen sizes, font families, colors, and box shadows.
-- **Bootstrap**: Another CSS framework used to style the application.
+* **Flet**: Provides a simple, Flutter-inspired UI framework for the Python components.
+* **OpenCV-Python**: Handles camera capture and frame processing for video input.
+* **MediaPipe**: Utilized for precise iris landmark detection, enabling accurate gaze tracking.
+* **Pygame**: Manages audio playback for background music and sound effects.
 
-### Backend
+### Repository Structure
 
-- **Node.js**: Provides a scalable and efficient server-side solution with an event-driven architecture to handle numerous simultaneous connections.
+```
 
-#### Dependencies
+frontend/
+main.py                       \# Core application logic, UI layout, and real-time iris tracking code.
+music/
+piano\_bgm.mp3             \# Background loop during tracking sessions.
+fly.mp3                   \# Surprise sound effect triggered on drift detection.
+requirements.txt              \# Lists all Python dependencies.
 
-- **Axios**: Utilized for making HTTP requests from the frontend to the backend services.
-- **Bcryptjs**: Ensures the security of user data through hashing and salting of passwords.
-- **Body-parser**: Middleware for parsing incoming request bodies.
-- **Cors**: Enables Cross-Origin Resource Sharing (CORS).
-- **Dotenv**: For loading environment variables.
-- **Express**: A fast, unopinionated, minimalist web framework for building RESTful APIs.
-- **Jsonwebtoken (JWT)**: Implements JSON Web Tokens for secure transmission of information.
-- **MySQL2**: A MySQL client for Node.js focused on performance.
-- **Nodemon**: Simplifies development by automatically restarting the server.
-- **Sequelize**: A promise-based Node.js ORM for various databases including MySQL, providing features like transaction support, relations, eager and lazy loading.
-- **React Hook Form**: Simplifies form handling and validation.
-- **React Router**: Manages navigation and routing within the application.
-- **Chart.js & React-Chartjs-2**: For data visualization and charting.
-- **Date-fns & React Datepicker**: For date manipulation and date picking functionalities.
+````
 
-## Installation and Setup
+### Key Components & Logic (main.py)
 
-1. **Clone the repository:**
+* **Configuration & Global Variables**:
+    * `camera_slot`: Index of the webcam (default: `0`).
+    * `minimum_detection_confidence`, `minimum_tracking_confidence`: Thresholds for MediaPipe landmark reliability.
+    * `threshold_x`: Pixel tolerance around the calibrated center for drift detection.
+    * `generation_rate`: Probability per frame that a "surprise" sound plays when drift occurs.
+    * **Global Containers**:
+        * `calibration_coords`: Stores the calibrated center (x, threshold) of the iris.
+        * `iris_drift`: A list to record details of each drift event (direction and duration).
 
-   ```bash
-   git clone https://github.com/michelleschmidt/DPDProject
-   ```
+* **Core Functions**:
+    * `play_background_music()`: Initializes Pygame mixer, loads, and loops `piano_bgm.mp3` until tracking stops, fading out at the session end.
+    * `surprise()`: Plays `fly.mp3` once when drift is detected. Includes a placeholder for random pan simulation.
+    * `iris_position(frame)`: Converts BGR frames to RGB, runs MediaPipe Face Mesh, and returns the pixel (x, y) coordinates of the left iris center or `(None, None)` if not detected.
+    * `track_iris(live_update, update_log, update_pos)`: Captures video for a fixed duration (60 seconds) or until stopped. For each frame, it computes the iris x-position, compares it to the calibrated center, marks drift events (start/end, direction, duration), and occasionally triggers `surprise()` based on `generation_rate`. Upon completion, it calls back to update UI logs and chart visualization.
 
-2. **Install dependencies for the backend:**
+* **User Interface (Flet)**:
+    * **Instruction Panel**: Explains the purpose, procedure, and controls of the application.
+    * **Control Panel**: Contains buttons for:
+        * **Calibrate**: Captures the initial iris center.
+        * **Start**: Initiates the 60-second tracking session, background music, and drift logging.
+        * **Stop**: Halts tracking mid-test.
+    * **Live Feedback**: Displays the current iris position relative to the calibrated center.
+    * **Drift Log & Chart**: Provides a textual log of each drift event and a bar chart visualizing the duration and direction of drifts.
 
+---
+
+## Usage Instructions
+
+To set up and run the application, follow these steps:
+
+1.  **Install Dependencies**:
     ```bash
-    cd backend
-    npm install
+    pip install -r frontend/requirements.txt
     ```
 
-3. **Install dependencies for the frontend:**
+2.  **Webcam Connection**:
+    Ensure a working webcam is connected to your system. The project defaults to using device `0`.
 
+3.  **Run the Application**:
+    Navigate to the `frontend/` directory in your terminal and execute:
     ```bash
-    cd ../frontend
-    npm install
-    npm install vite@latest --save-dev
+    python main.py
     ```
 
-    To open the frontend in developer mode do `npx vite` from the frontend directory and the page opens automatically. otherwise, run `npm start`
-    The admin access to the website is email `olivia@mail.com` and password: `securePassword123`
-
-5. **Set up environment variables:**
-   - The backend uses some APIs which cannot be disclosed and as such, cannot work properly without the required credentials.
-
-6. **Run the backend server:**
-
-   ```bash
-   cd backend
-   npm run dev (in development mode)
-   ```
-
-HealthConnect aims to revolutionize the way individuals manage their health by providing a comprehensive, user-friendly platform for appointment booking and telehealth services with optional translation support. Join us in making healthcare management accessible and efficient for everyone
+4.  **Follow On-Screen Instructions**:
+    * Sit straight and focus directly on the camera.
+    * Click the "**Calibrate**" button.
+    * Then, click the "**Start**" button to begin the gaze tracking session.
+    * Observe the drift log and bar chart for analysis once the session is complete.
