@@ -83,41 +83,42 @@ def track_iris(live_update, update_log, update_pos):
     duration = 60
 
     while time.time() - start < duration and not stop_tracking:
-        ret, frame = cap.read()
-        if not ret:
-            break
+        try:
+            ret, frame = cap.read()
+            if not ret:
+                break
 
-        pos = iris_position(frame)
-        if pos is not None and calibration_coords:
-            x, _ = pos
-            cx, threshold = calibration_coords
+            pos = iris_position(frame)
+            if pos is not None and calibration_coords:
+                x, _ = pos
+                cx, threshold = calibration_coords
 
-            update_pos(f"Iris Live Pos At {x}, Calibrated_Center = {cx}, Threshold = +/-{threshold}")
-            print(f"Iris X = {x}, Center = {cx}, Threshold = ±{threshold}")
-
-            if x is not None:
-                if abs(x - cx) > threshold:
-                    if drift_start_time is None:
-                        drift_start_time = time.time()
+                update_pos(f"Iris Live Pos At {x}, Threshold = +/-{threshold}")
+                #print(f"Iris X = {x}, Center = {cx}, Threshold = ±{threshold}")
+                
+                if x is not None:
+                    if abs(x - cx) > threshold:
+                        if drift_start_time is None:
+                            drift_start_time = time.time()
+                        else:
+                            pass
                     else:
-                        pass
-                else:
-                    if drift_start_time:
-                        drift_duration = round((time.time() - drift_start_time), 2)
-                        direction = "Attention_towards_Left" if x > cx else "Attention_towards_Right"
-                        iris_drift.append({
-                            "direction": direction,
-                            "duration": drift_duration
-                        })
-                        drift_start_time = None
-
-        #__Visual Calibrated Center
-        #if calibration_coords:
-        #    cv2.circle(frame, (cx, 240), threshold, (255, 0, 0), 2)
-
-        #cv2.imshow("Iris Tracking", frame)
-        #if cv2.waitKey(1) & 0xFF == ord("q"):
-        #    break
+                        if drift_start_time:
+                            drift_duration = round((time.time() - drift_start_time), 2)
+                            direction = "Attention_towards_Left" if x > cx else "Attention_towards_Right"
+                            iris_drift.append({
+                                "direction": direction,
+                                "duration": drift_duration
+                            })
+                            drift_start_time = None
+                try:
+                    alignment = x - cx
+                    attempt_alignment = max(-145, min(alignment, 145))
+                    drift_dot.left = 150 + attempt_alignment
+                except:
+                    pass
+        except:
+            pass
 
         #__Sound
         if random.random() < generation_rate:  
@@ -188,6 +189,8 @@ def main(page: ft.Page):
         iris_drift.clear()
 
         threading.Thread(target=play_background_music, daemon=True).start()
+        lane_display.visible = True
+        counter_balance.visible = True
 
         page.update()
         threading.Thread(target=track_iris, args=(
@@ -209,6 +212,8 @@ def main(page: ft.Page):
         global stop_tracking 
         stop_tracking = True
 
+        lane_display.visible = False 
+        counter_balance.visible = False
         feedback.controls.clear()
 
         if not iris_drift:
@@ -282,6 +287,20 @@ def main(page: ft.Page):
     feedback = ft.Column()
     drift_log_label = ft.Text("📋 Drift Log", size=16, weight="bold", color=ft.Colors.BLUE_GREY_100)
     iris_position_text = ft.Text(color=ft.Colors.LIGHT_BLUE_ACCENT)
+    
+    global counter_balance
+    counter_balance = ft.Text("Visual Counter-Balance on X Axis", visible= False)
+    global drift_dot
+    drift_dot = ft.Container(width=10, height=30, bgcolor="#00FF00", left=150)
+    global lane_display
+    lane_display = ft.Container(
+        content=ft.Stack([
+            ft.Container(width=300, height=30, bgcolor="#222222", border_radius=15),
+            ft.Container(width=4, height=30, left=150, bgcolor="#888888"),  
+            drift_dot
+        ]),
+        visible=False)
+    
 
     button_width = 100
     action_buttons = ft.Row(
@@ -324,6 +343,8 @@ def main(page: ft.Page):
                             status,
                             action_buttons,
                             iris_position_text,
+                            counter_balance,
+                            lane_display,   
                             feedback,
                         ]
                     )
