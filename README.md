@@ -82,7 +82,7 @@ To set up and run the application, follow these steps:
 
 1.  **Install Dependencies**:
     ```bash
-    pip install -r frontend/requirements.txt
+    pip install -r frontend/req.txt
     ```
 
 2.  **Webcam Connection**:
@@ -91,7 +91,7 @@ To set up and run the application, follow these steps:
 3.  **Run the Application**:
     Navigate to the `frontend/` directory in your terminal and execute:
     ```bash
-    python main.py
+    flet -r main.py
     ```
 
 4.  **Follow On-Screen Instructions**:
