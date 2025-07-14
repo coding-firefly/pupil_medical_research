@@ -100,11 +100,11 @@ def track_iris(live_update, update_log, update_pos):
                     if abs(x - cx) > threshold:
                         if drift_start_time is None:
                             drift_start_time = time.time()
-                        # else:
-                        #     pass
+                        else:
+                             pass
                         # 🔴 Animate drift_dot to red (visual alert)
-                        drift_dot.bgcolor = "#FF5555"
-                        drift_dot.update()
+                        #drift_dot.bgcolor = "#FF5555"
+                        #drift_dot.update()
                     else:
                         if drift_start_time:
                             drift_duration = round((time.time() - drift_start_time), 2)
@@ -116,8 +116,8 @@ def track_iris(live_update, update_log, update_pos):
                             drift_start_time = None
 
                             # 🟢 Back to center – show green again
-                        drift_dot.bgcolor = "#00FF00"
-                        drift_dot.update()
+                        # drift_dot.bgcolor = "#00FF00"
+                        # drift_dot.update()
                 try:
                     alignment = x - cx
                     attempt_alignment = max(-145, min(alignment, 145))
