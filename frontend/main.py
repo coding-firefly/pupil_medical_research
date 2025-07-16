@@ -7,19 +7,20 @@ import pygame
 import os
 import random
 
-#__General Settings
-camera_slot = 0
+# === Configuration ===
+camera_slot = 0 # Default camera
 minimum_detection_confidence = 0.3
 minimum_tracking_confidence = 0.3
-threshold_x = 15
-generation_rate = 0.005
+threshold_x = 15 # Drift detection threshold
+generation_rate = 0.005 # Chance to play surprise sound
 
-#__Global Var
-iris_drift = []
-calibration_coords = None
-drift_start_time = None
-stop_tracking = False
+# === Global Variables ===
+iris_drift = [] # Stores detected drift events
+calibration_coords = None # Calibration center point
+drift_start_time = None # When drift was first detected
+stop_tracking = False # Flag to stop the tracking thread
 
+# Initialize face mesh detector
 mp_face_mesh = mp.solutions.face_mesh
 face_mesh = mp_face_mesh.FaceMesh(
     static_image_mode=False,
@@ -29,6 +30,7 @@ face_mesh = mp_face_mesh.FaceMesh(
     min_tracking_confidence=minimum_tracking_confidence
 )
 
+# === Background Music ===
 def play_background_music():
     try:
         pygame.mixer.init()
@@ -46,6 +48,7 @@ def play_background_music():
     except Exception as e:
         print(f"[BGM] Error {e}")
 
+# === Surprise Sound Effect ===
 def surprise():
     try:
         fly_path = os.path.join(os.path.dirname(__file__), "music", "fly.mp3")
@@ -63,6 +66,7 @@ def surprise():
     except Exception as e:
         print(f"[Sound Error] {e}")
 
+# === Iris Position Detection ===
 def iris_position(frame):
     h, w, _ = frame.shape
     rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -76,11 +80,12 @@ def iris_position(frame):
             return x, y
     return None, None
 
+# === Iris Drift Tracking Thread ===
 def track_iris(live_update, update_log, update_pos):
     global drift_start_time, stop_tracking
     cap = cv2.VideoCapture(camera_slot)
     start = time.time()
-    duration = 60
+    duration = 60 # Tracking session length in seconds
 
     while time.time() - start < duration and not stop_tracking:
         try:
@@ -98,6 +103,7 @@ def track_iris(live_update, update_log, update_pos):
                 
                 if x is not None:
                     if abs(x - cx) > threshold:
+                        # Drift detected
                         if drift_start_time is None:
                             drift_start_time = time.time()
                         else:
@@ -106,6 +112,7 @@ def track_iris(live_update, update_log, update_pos):
                         #drift_dot.bgcolor = "#FF5555"
                         #drift_dot.update()
                     else:
+                        # Drift stopped
                         if drift_start_time:
                             drift_duration = round((time.time() - drift_start_time), 2)
                             direction = "Attention_towards_Left" if x > cx else "Attention_towards_Right"
@@ -118,6 +125,7 @@ def track_iris(live_update, update_log, update_pos):
                             # 🟢 Back to center – show green again
                         # drift_dot.bgcolor = "#00FF00"
                         # drift_dot.update()
+                # Move drift indicator
                 try:
                     alignment = x - cx
                     attempt_alignment = max(-145, min(alignment, 145))
@@ -127,10 +135,11 @@ def track_iris(live_update, update_log, update_pos):
         except:
             pass
 
-        #__Sound
+        # Random trigger sound
         if random.random() < generation_rate:  
             threading.Thread(target=surprise).start()
-
+    
+    # Cleanup
     cap.release()
     cv2.destroyAllWindows()
     update_pos("")
