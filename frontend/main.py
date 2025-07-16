@@ -101,7 +101,10 @@ def track_iris(live_update, update_log, update_pos):
                         if drift_start_time is None:
                             drift_start_time = time.time()
                         else:
-                            pass
+                             pass
+                        # 🔴 Animate drift_dot to red (visual alert)
+                        #drift_dot.bgcolor = "#FF5555"
+                        #drift_dot.update()
                     else:
                         if drift_start_time:
                             drift_duration = round((time.time() - drift_start_time), 2)
@@ -111,6 +114,10 @@ def track_iris(live_update, update_log, update_pos):
                                 "duration": drift_duration
                             })
                             drift_start_time = None
+
+                            # 🟢 Back to center – show green again
+                        # drift_dot.bgcolor = "#00FF00"
+                        # drift_dot.update()
                 try:
                     alignment = x - cx
                     attempt_alignment = max(-145, min(alignment, 145))
@@ -207,7 +214,9 @@ def main(page: ft.Page):
         page.update()
 
     def update_logs():
-        logs = "\n".join([f"{'[Serious]\n' if d['duration']>2.5 else ""}{d['direction']} for {d['duration']}s" for d in iris_drift])
+        # logs = "\n".join([f"{'[Serious]\n' if d['duration']>2.5 else ""}{d['direction']} for {d['duration']}s" for d in iris_drift])
+        logs = "\n".join([("[Serious]\n" if d['duration'] > 2.5 else "") + f"{d['direction']} for {d['duration']}s" for d in iris_drift])
+
         drift_log.value = logs or "Perfect!! No Drift at all!!"
         global stop_tracking 
         stop_tracking = True
@@ -269,21 +278,21 @@ def main(page: ft.Page):
 
     title = ft.Text(
         "ADHD Iris Tracking Assessment",
-        size=24,
-        weight="bold",
-        color=ft.Colors.CYAN_ACCENT,
+        size=28,
+        weight=ft.FontWeight.BOLD,
+        color=ft.Colors.BLUE_800,  # Deep blue for title
         text_align=ft.TextAlign.CENTER,
     )
 
     subtitle = ft.Text(
         "Visual Attention Drift Monitor – Calibrate, Track, Review",
-        size=14,
+        size=16,
         italic=True,
         color=ft.Colors.BLUE_GREY_200,
         text_align=ft.TextAlign.CENTER,
     )
 
-    status = ft.Text(color=ft.Colors.GREEN_ACCENT)
+    status = ft.Text(color=ft.Colors.BLUE_700)
     feedback = ft.Column()
     drift_log_label = ft.Text("📋 Drift Log", size=16, weight="bold", color=ft.Colors.BLUE_GREY_100)
     iris_position_text = ft.Text(color=ft.Colors.LIGHT_BLUE_ACCENT)
@@ -291,7 +300,16 @@ def main(page: ft.Page):
     global counter_balance
     counter_balance = ft.Text("Visual Counter-Balance on X Axis", visible= False)
     global drift_dot
-    drift_dot = ft.Container(width=10, height=30, bgcolor="#00FF00", left=150)
+    # drift_dot = ft.Container(width=10, height=30, bgcolor="#00FF00", left=150)
+    drift_dot = ft.Container(
+    width=10,
+    height=30,
+    bgcolor="#00FF00",
+    left=150,
+    animate_position=300,     # milliseconds
+    border_radius=4
+)
+
     global lane_display
     lane_display = ft.Container(
         content=ft.Stack([
@@ -305,13 +323,28 @@ def main(page: ft.Page):
     button_width = 100
     action_buttons = ft.Row(
         alignment=ft.MainAxisAlignment.CENTER,
-        spacing=12,
+        spacing=16,
         controls=[
-            ft.FilledButton("Calibrate", on_click=calibrate, width=button_width),
-            ft.FilledTonalButton("▶ Start", on_click=start_tracking, width=button_width),
-            ft.OutlinedButton("Stop", on_click=stop_tracking_btn, width=button_width),
+            ft.FilledButton("Calibrate", on_click=calibrate, width=button_width, style=ft.ButtonStyle(
+                    overlay_color=ft.Colors.GREEN_100,             # hover background color
+                    color=ft.Colors.GREEN_800,                     # text color
+                    side=ft.BorderSide(width=1, color=ft.Colors.GREEN_600),  # border color
+                        ),),
+            ft.FilledTonalButton("▶ Start", on_click=start_tracking, width=button_width, style=ft.ButtonStyle(
+                    overlay_color=ft.Colors.BLUE_100,             # hover background color
+                    color=ft.Colors.BLUE_800,                     # text color
+                    side=ft.BorderSide(width=1, color=ft.Colors.BLUE_50),  # border color
+                        ),),
+            ft.OutlinedButton("Stop", on_click=stop_tracking_btn, width=button_width, 
+                style=ft.ButtonStyle(
+                    overlay_color=ft.Colors.RED_100,             # hover background color
+                    color=ft.Colors.RED_600,                     # text color
+                    side=ft.BorderSide(width=1, color=ft.Colors.RED_600),  # border color
+                        ),),
         ]
     )
+
+
 
     page.add(
         ft.Row(
